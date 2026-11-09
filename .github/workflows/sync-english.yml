@@ -1,0 +1,86 @@
+
+name: Sync English Properties from IQSS
+
+on:
+  # Weekly check on Monday, 07:00 UTC
+  schedule:
+    - cron: '0 7 * * 1'
+
+  # Allow manual execution
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-iqss-english
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync IQSS English files
+    runs-on: ubuntu-latest
+
+    # The workflow definition lives on develop.
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+      # Checkout vendor-facing deployment branch.
+      - name: Checkout deployment branch
+        uses: actions/checkout@v4
+        with:
+          ref: deployment
+          fetch-depth: 0
+
+      # Retrieve English files from Dataverse 6.11.
+      - name: Checkout IQSS Dataverse 6.11
+        uses: actions/checkout@v4
+        with:
+          repository: IQSS/dataverse
+          ref: v6.11
+          path: dataverse-source
+          sparse-checkout: |
+            src/main/java/propertyFiles
+
+      - name: Sync English properties
+        run: |
+          python3 scripts/sync_english.py \
+            dataverse-source/src/main/java/propertyFiles
+
+      # Avoid including the external repository in the PR.
+      - name: Remove temporary Dataverse source
+        run: rm -rf dataverse-source
+
+      - name: Check generated changes
+        run: |
+          git diff --check
+          git status --short
+          git diff --stat -- en_US/
+
+      - name: Create synchronization pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ github.token }}
+          base: deployment
+          branch: maintenance/sync-iqss-english
+          delete-branch: true
+          add-paths: |
+            en_US/**
+          commit-message: "Sync English properties from Dataverse v6.11"
+          title: "Sync English properties from Dataverse v6.11"
+          body: |
+            Automated English properties synchronization.
+
+            Source repository: IQSS/dataverse
+            Source release: v6.11
+
+            Changes:
+            - Synchronize standard English properties
+            - Apply local English terminology overrides
+            - Preserve Finnish translation files
+
+            Review the changes before merging.
+
+            This pull request does not modify Finnish translations.
+
