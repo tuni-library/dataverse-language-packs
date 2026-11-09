@@ -13,7 +13,7 @@ OVERRIDES = Path("local-overrides/en_US")
 
 # Basic Java properties key=value or key:value format.
 ENTRY = re.compile(
-    r"^(\s*([A-Za-z0-9_.-]+)\s*[=:]\s*)(.*?)(\r?\n?)$"
+    r"^(\s*([A-Za-z0-9_./-]+)\s*[=:]\s*)(.*?)(\r?\n?)$"
 )
 
 
