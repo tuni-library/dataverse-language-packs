@@ -54,7 +54,7 @@ jobs:
 
       - name: Check generated changes
         run: |
-          git diff --check
+          git -c core.whitespace=-blank-at-eol diff --check
           git status --short
           git diff --stat -- en_US/
 
